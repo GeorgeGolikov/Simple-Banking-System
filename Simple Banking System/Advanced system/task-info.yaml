@@ -1,0 +1,1110 @@
+type: edu
+custom_name: stage4
+files:
+- name: src/banking/Main.java
+  visible: true
+  text: |-
+    package banking;
+
+    import java.util.LinkedList;
+    import java.util.Random;
+    import java.util.Scanner;
+
+    public class Main {
+        public static void main(String[] args) {
+            LinkedList<Account> accountsList = new LinkedList<>();
+            Scanner scanner = new Scanner(System.in);
+            boolean exitFlag = false;
+
+            while (!exitFlag) {
+                Menu.printMenu();
+
+                if (scanner.hasNextInt()) {
+                    int option = scanner.nextInt();
+
+                    switch (option) {
+                        case 1:
+                            long lastSeed = accountsList.isEmpty() ? 1 : accountsList.getLast().getLastSeed();
+                            Account acc = new Account(lastSeed);
+                            accountsList.addLast(acc);
+                            Menu.printAnswerOnCreateAcc(acc.getCardNumber(), acc.getPinCode());
+                            break;
+                        case 2:
+                            String cardNumber;
+                            String pinCode;
+
+                            Menu.printAnswerOnLogInto();
+                            if (scanner.hasNext()) {
+                                cardNumber = scanner.next();
+                            }
+                            else {
+                                Menu.printWrongPin();
+                                break;
+                            }
+
+                            Menu.printEnterPin();
+                            if (scanner.hasNext()) {
+                                pinCode = scanner.next();
+                            }
+                            else {
+                                Menu.printWrongPin();
+                                break;
+                            }
+
+                            int i = 0;
+                            for (Account a: accountsList) {
+                                ++i;
+                                if (cardNumber.equals(a.getCardNumber())) {
+                                    if (pinCode.equals(a.getPinCode())) {
+                                        Menu.printSuccessLogin();
+                                        Menu.printMenuLogged();
+
+                                        int optionLogged = scanner.nextInt(); // no check if input is int
+                                        while (optionLogged == 1) {
+                                            Menu.printBalance();
+                                            Menu.printMenuLogged();
+                                            optionLogged = scanner.nextInt();
+                                        }
+                                        switch (optionLogged) {
+                                            case 2:
+                                                Menu.printLogOut();
+                                                break;
+                                            case 0:
+                                                Menu.printSayBye();
+                                                exitFlag = true;
+                                                break;
+                                            default:
+                                                Menu.printWrongOption();
+                                        }
+                                    }
+                                    else {
+                                        Menu.printWrongPin();
+                                    }
+                                    break;
+                                }
+                                else if (i == accountsList.size()) {
+                                    Menu.printWrongPin();
+                                }
+                            }
+
+                            break;
+                        case 0:
+                            Menu.printSayBye();
+                            exitFlag = true;
+                            break;
+                        default:
+                            Menu.printWrongOption();
+                    }
+                }
+                else {
+                    Menu.printWrongOption();
+                    scanner.next();
+                }
+            }
+        }
+    }
+
+    class Menu {
+        private static String str1;
+        private static String str2;
+        private static String str0;
+
+        private static String loggedStr1;
+        private static String loggedStr2;
+
+        static {
+            str1 = "1. Create an account\n";
+            str2 = "2. Log into account\n";
+            str0 = "0. Exit\n";
+
+            loggedStr1 = "1. Balance\n";
+            loggedStr2 = "2. Log out\n";
+        }
+
+        public static void printMenu() {
+            System.out.print(str1 + str2 + str0);
+        }
+
+        public static void printAnswerOnCreateAcc(String cardNumber, String pinCode) {
+            String res = "Your card has been created\n" + "Your card number:\n" +
+                        cardNumber + "\nYour card PIN:\n" + pinCode + "\n";
+            System.out.println(res);
+        }
+
+        public static void printAnswerOnLogInto() {
+            System.out.println("Enter your card number:");
+        }
+
+        public static void printEnterPin() {
+            System.out.println("Enter your PIN:");
+        }
+
+        public static void printWrongPin() {
+            System.out.println("\nWrong card number or PIN!\n");
+        }
+
+        public static void printSuccessLogin() {
+            System.out.println("\nYou have successfully logged in!\n");
+        }
+
+        public static void printMenuLogged() {
+            System.out.println(loggedStr1 + loggedStr2 + str0);
+        }
+
+        public static void printBalance() {
+            System.out.println("\nBalance: 0\n");
+        }
+
+        public static void printLogOut() {
+            System.out.println("\nYou have successfully logged out!\n");
+        }
+
+        public static void printWrongOption() {
+            System.out.println("Wrong option!\n");
+        }
+
+        public static void printSayBye() {
+            System.out.println("\nBye!");
+        }
+    }
+
+    class Account {
+        private String cardNumber;
+        private String pinCode;
+
+        private static String iin;
+        private static int customerAccNumLen;
+
+        private long lastSeed;
+
+        static {
+            iin = "400000";
+            customerAccNumLen = 9;
+        }
+
+        public Account(long lastSeed) {
+            this.lastSeed = lastSeed;
+            this.cardNumber = generateCardNumber();
+            this.pinCode = generateSequence(cardNumber.charAt(13), 4);
+            this.lastSeed++;
+        }
+
+        public String getCardNumber() {
+            return cardNumber;
+        }
+
+        public String getPinCode() {
+            return pinCode;
+        }
+
+        public long getLastSeed() {
+            return lastSeed;
+        }
+
+        private String generateCardNumber() {
+            String customerAccNum = generateSequence(lastSeed + 1, customerAccNumLen);
+            int checksum = generateLuhnCheckSum(iin + customerAccNum);
+            return iin + customerAccNum + checksum;
+        }
+
+        private int generateLuhnCheckSum(String number) {
+            int counter = number.length();
+            long num = Long.parseLong(number);
+            int sum = 0;
+            long lastDigit = 0;
+
+            while (num > 0) {
+                lastDigit = num % 10;
+                if (counter % 2 != 0) {
+                    lastDigit *= 2;
+                    lastDigit -= lastDigit > 9 ? 9 : 0;
+                }
+                --counter;
+                num /= 10;
+                sum += lastDigit;
+            }
+
+            if (sum % 10 == 0) {
+                return 0;
+            }
+            return 10 - (sum % 10);
+        }
+
+        private String generateSequence(long seed, int amount) {
+            Random rnd = new Random(seed);
+            StringBuilder sequence = new StringBuilder();
+            for (int i = 0; i < amount; ++i) {
+                sequence.append(rnd.nextInt(10));
+            }
+            return sequence.toString();
+        }
+    }
+  learner_created: false
+- name: test/SimpleBankSystemTest.java
+  visible: false
+  text: |
+    import org.hyperskill.hstest.dynamic.DynamicTest;
+    import org.hyperskill.hstest.exception.outcomes.WrongAnswer;
+    import org.hyperskill.hstest.stage.StageTest;
+    import org.hyperskill.hstest.testcase.CheckResult;
+    import org.hyperskill.hstest.testing.TestedProgram;
+    import org.junit.AfterClass;
+    import org.junit.BeforeClass;
+
+    import java.io.File;
+    import java.io.IOException;
+    import java.nio.file.Files;
+    import java.nio.file.Path;
+    import java.nio.file.Paths;
+    import java.sql.*;
+    import java.util.HashMap;
+    import java.util.Map;
+    import java.util.Random;
+    import java.util.regex.Matcher;
+    import java.util.regex.Pattern;
+
+    public class SimpleBankSystemTest extends StageTest<String> {
+
+        private static final String databaseFileName = "card.s3db";
+        private static final String tempDatabaseFileName = "tempDatabase.s3db";
+        private static final String[] args = {"-fileName", databaseFileName};
+        private static final Map<String, String> correctData = new HashMap<>();
+
+        private static final Pattern cardNumberPattern = Pattern.compile("^400000\\d{10}$", Pattern.MULTILINE);
+        private static final Pattern pinPattern = Pattern.compile("^\\d{4}$", Pattern.MULTILINE);
+
+        private static Connection connection;
+
+
+        @DynamicTest
+        CheckResult test1_checkDatabaseFile() {
+
+            TestedProgram program = new TestedProgram();
+            program.start(args);
+
+            stopAndCheckIfUserProgramWasStopped(program);
+
+            File file = new File(databaseFileName);
+
+            if (!file.exists()) {
+                return CheckResult.wrong("You should create a database file " +
+                    "named " + databaseFileName + ". The file name should be taken from the command line arguments.\n" +
+                    "The database file shouldn't be deleted after stopping the program!");
+            }
+
+            return CheckResult.correct();
+        }
+
+        @DynamicTest
+        CheckResult test2_checkConnection() {
+
+            TestedProgram program = new TestedProgram();
+            program.start(args);
+
+            stopAndCheckIfUserProgramWasStopped(program);
+
+            getConnection();
+            closeConnection();
+
+            return CheckResult.correct();
+        }
+
+        @DynamicTest
+        CheckResult test3_checkIfTableExists() {
+
+            TestedProgram program = new TestedProgram();
+            program.start(args);
+
+            stopAndCheckIfUserProgramWasStopped(program);
+
+            try {
+                ResultSet resultSet = getConnection().createStatement().executeQuery(
+                    "SELECT name FROM sqlite_master WHERE type ='table' AND name NOT LIKE 'sqlite_%';");
+                while (resultSet.next()) {
+                    if (resultSet.getString("name").equals("card")) {
+                        closeConnection();
+                        return CheckResult.correct();
+                    }
+                }
+            } catch (SQLException e) {
+                closeConnection();
+                return CheckResult.wrong("Can't execute a query in your database! Make sure that your database isn't broken and you close your connection at the end of the program!");
+            }
+
+            closeConnection();
+            return CheckResult.wrong("Your database doesn't have a table named 'card'");
+        }
+
+        @DynamicTest
+        CheckResult test4_checkColumns() {
+
+            TestedProgram program = new TestedProgram();
+            program.start(args);
+
+            stopAndCheckIfUserProgramWasStopped(program);
+
+            try {
+
+                ResultSet resultSet = getConnection().createStatement().executeQuery("PRAGMA table_info(card);");
+                Map<String, String> columns = new HashMap<>();
+
+                while (resultSet.next()) {
+                    columns.put(resultSet.getString("name").toLowerCase(), resultSet.getString("type").toUpperCase());
+                }
+
+                String[][] correctColumns = {
+                    {"id", "INTEGER", "INT"},
+                    {"number", "TEXT", "VARCHAR"},
+                    {"pin", "TEXT", "VARCHAR"},
+                    {"balance", "INTEGER", "INT"}};
+
+                for (String[] correctColumn : correctColumns) {
+                    String errorMessage = "Can't find '" + correctColumn[0] + "' column with '" + correctColumn[1] + "' type.\n" +
+                        "Your table should have columns described in " +
+                        "the stage instructions.";
+                    if (!columns.containsKey(correctColumn[0])) {
+                        return CheckResult.wrong(errorMessage);
+                    } else if (!columns.get(correctColumn[0]).contains(correctColumn[1]) && !columns.get(correctColumn[0]).contains(correctColumn[2])) {
+                        return CheckResult.wrong(errorMessage);
+                    }
+                }
+            } catch (SQLException e) {
+                return CheckResult.wrong("Can't connect to the database!");
+            }
+
+            closeConnection();
+            return CheckResult.correct();
+        }
+
+
+        @DynamicTest
+        CheckResult test5_checkAddingRowsToTheTable() {
+
+            deleteAllRows();
+
+            TestedProgram program = new TestedProgram();
+            program.start(args);
+
+            String output = program.execute("1");
+
+            if (!getData(output)) {
+                return CheckResult.wrong("You should output card number and PIN like in example\n" +
+                    "Or it doesn't pass the Luhn algorithm");
+            }
+
+            output = program.execute("1");
+
+            if (!getData(output)) {
+                return CheckResult.wrong("You should output card number and PIN like in example\n" +
+                    "Or it doesn't pass the Luhn algorithm");
+            }
+
+            output = program.execute("1");
+
+            if (!getData(output)) {
+                return CheckResult.wrong("You should output card number and PIN like in example\n" +
+                    "Or it doesn't pass the Luhn algorithm");
+            }
+
+            output = program.execute("1");
+
+            if (!getData(output)) {
+                return CheckResult.wrong("You should output card number and PIN like in example\n" +
+                    "Or it doesn't pass the Luhn algorithm");
+            }
+
+            output = program.execute("1");
+
+            if (!getData(output)) {
+                return CheckResult.wrong("You should output card number and PIN like in example\n" +
+                    "Or it doesn't pass the Luhn algorithm");
+            }
+
+            stopAndCheckIfUserProgramWasStopped(program);
+
+            try {
+
+                ResultSet resultSet = getConnection().createStatement().executeQuery("SELECT * FROM card");
+                Map<String, String> userData = new HashMap<>();
+
+                while (resultSet.next()) {
+                    System.out.println(resultSet.getString("number"));
+                    if (resultSet.getString("number") == null) {
+                        return CheckResult.wrong("The card number shouldn't be null in the database!");
+                    }
+                    if (resultSet.getInt("balance") != 0) {
+                        return CheckResult.wrong("Default balance value should be 0 in the database!");
+                    }
+                    if (resultSet.getString("pin") == null) {
+                        return CheckResult.wrong("The PIN shouldn't be null in the database!");
+                    }
+                    userData.put(resultSet.getString("number"), resultSet.getString("pin"));
+                }
+
+                for (Map.Entry<String, String> entry : correctData.entrySet()) {
+                    if (!userData.containsKey(entry.getKey())) {
+                        return CheckResult.wrong("Your database doesn't save newly created cards.");
+                    } else if (!userData.get(entry.getKey()).equals(entry.getValue())) {
+                        return CheckResult.wrong("Correct PIN for card number " + entry.getKey() + " should " +
+                            "be " + entry.getValue());
+                    }
+                }
+
+
+            } catch (SQLException e) {
+                return CheckResult.wrong("Can't connect the database!");
+            }
+
+            closeConnection();
+            return CheckResult.correct();
+        }
+
+        @DynamicTest
+        CheckResult test6_checkLogIn() {
+
+            TestedProgram program = new TestedProgram();
+            program.start(args);
+
+            String output = program.execute("1");
+
+            Matcher cardNumberMatcher = cardNumberPattern.matcher(output);
+
+            if (!cardNumberMatcher.find()) {
+                return CheckResult.wrong("You are printing the card number " +
+                    "incorrectly. The card number should look like in the example:" +
+                    " 400000DDDDDDDDDD, where D is a digit.");
+            }
+
+            Matcher pinMatcher = pinPattern.matcher(output);
+
+            if (!pinMatcher.find()) {
+                return CheckResult.wrong("You are printing the card PIN " +
+                    "incorrectly. The PIN should look like in the example: DDDD, where D is a digit.");
+            }
+
+            String correctPin = pinMatcher.group().trim();
+            String correctCardNumber = cardNumberMatcher.group();
+
+            program.execute("2");
+            output = program.execute(correctCardNumber + "\n" + correctPin);
+
+            if (!output.toLowerCase().contains("successfully")) {
+                return CheckResult.wrong("The user should be signed in after" +
+                    " entering the correct card information.");
+            }
+
+            stopAndCheckIfUserProgramWasStopped(program);
+
+            return CheckResult.correct();
+        }
+
+        @DynamicTest
+        CheckResult test7_checkLogInWithWrongPin() {
+
+            TestedProgram program = new TestedProgram();
+            program.start(args);
+
+            String output = program.execute("1");
+
+            Matcher cardNumberMatcher = cardNumberPattern.matcher(output);
+            Matcher pinMatcher = pinPattern.matcher(output);
+
+            if (!cardNumberMatcher.find() || !pinMatcher.find()) {
+                return CheckResult.wrong("You should output card number and PIN like in example");
+            }
+
+            String correctCardNumber = cardNumberMatcher.group();
+            String correctPin = pinMatcher.group();
+
+            Random random = new Random();
+
+            String incorrectPin = correctPin;
+
+            while (correctPin.equals(incorrectPin)) {
+                incorrectPin = String.valueOf(1000 + random.nextInt(8999));
+            }
+
+            program.execute("2");
+            output = program.execute(correctCardNumber + "\n" + incorrectPin);
+
+            if (output.toLowerCase().contains("successfully")) {
+                return CheckResult.wrong("The user should not be signed in" +
+                    " after entering incorrect card information.");
+            }
+
+            stopAndCheckIfUserProgramWasStopped(program);
+            return CheckResult.correct();
+        }
+
+        @DynamicTest
+        CheckResult test8_checkLogInToNotExistingAccount() {
+
+            TestedProgram program = new TestedProgram();
+            program.start(args);
+
+            String output = program.execute("1");
+
+            Matcher cardNumberMatcher = cardNumberPattern.matcher(output);
+            Matcher pinMatcher = pinPattern.matcher(output);
+
+            if (!cardNumberMatcher.find() || !pinMatcher.find()) {
+                return CheckResult.wrong("You should output card number and PIN like in example");
+            }
+
+            String correctCardNumber = cardNumberMatcher.group();
+            String correctPin = pinMatcher.group();
+
+            Random random = new Random();
+
+            String incorrectCardNumber = correctCardNumber;
+
+            while (correctCardNumber.equals(incorrectCardNumber)) {
+                incorrectCardNumber = "400000" + (1_000_000_00 + random.nextInt(8_000_000_00));
+            }
+
+            program.execute("2");
+            output = program.execute(incorrectCardNumber + "\n" + correctPin);
+
+            if (output.toLowerCase().contains("successfully")) {
+                return CheckResult.wrong("The user should not be signed in" +
+                    " after entering incorrect card information.");
+            }
+
+            stopAndCheckIfUserProgramWasStopped(program);
+            return CheckResult.correct();
+        }
+
+        @DynamicTest
+        CheckResult test9_checkBalance() {
+
+            TestedProgram program = new TestedProgram();
+            program.start(args);
+
+            String output = program.execute("1");
+
+            Matcher cardNumberMatcher = cardNumberPattern.matcher(output);
+            Matcher pinMatcher = pinPattern.matcher(output);
+
+            if (!cardNumberMatcher.find() || !pinMatcher.find()) {
+                return CheckResult.wrong("You should output card number and PIN like in example");
+            }
+
+            String correctPin = pinMatcher.group().trim();
+            String correctCardNumber = cardNumberMatcher.group();
+
+            program.execute("2");
+            program.execute(correctCardNumber + "\n" + correctPin);
+
+            output = program.execute("1");
+
+            if (!output.contains("0")) {
+                return CheckResult.wrong("Expected balance: 0");
+            }
+
+            stopAndCheckIfUserProgramWasStopped(program);
+            return CheckResult.correct();
+        }
+
+        // ttest is not a typo!
+        @DynamicTest
+        CheckResult ttest10_checkAddIncome() {
+
+            deleteAllRows();
+
+            TestedProgram program = new TestedProgram();
+            program.start(args);
+
+            String output = program.execute("1");
+
+            Matcher cardNumberMatcher = cardNumberPattern.matcher(output);
+            Matcher pinMatcher = pinPattern.matcher(output);
+
+            if (!cardNumberMatcher.find() || !pinMatcher.find()) {
+                return new CheckResult(false, "You should output card number and PIN like in example");
+            }
+
+            String correctPin = pinMatcher.group().trim();
+            String correctCardNumber = cardNumberMatcher.group();
+
+            program.execute("2");
+            program.execute(correctCardNumber + "\n" + correctPin);
+            program.execute("2\n10000");
+            stopAndCheckIfUserProgramWasStopped(program);
+
+            int userBalance = getBalance(correctCardNumber);
+            if (userBalance != 10000) {
+                return CheckResult.wrong("Account balance int the database is wrong after adding income.\nExpected 10000");
+            }
+
+            program = new TestedProgram();
+            program.start(args);
+
+            program.execute("2");
+            program.execute(correctCardNumber + "\n" + correctPin);
+            program.execute("2\n15000");
+            stopAndCheckIfUserProgramWasStopped(program);
+
+            userBalance = getBalance(correctCardNumber);
+            if (userBalance != 25000) {
+                return CheckResult.wrong("Account balance is wrong after adding income.\nExpected 25000");
+            }
+
+            return CheckResult.correct();
+        }
+
+        // ttest is not a typo!
+        @DynamicTest
+        CheckResult ttest11_checkTransfer() {
+
+            String incorrectCardNumber = "2000007269641764"; //Doesn't pass Luhn algorithm
+            String notExistingCardNumber = "2000007269641768";
+
+            deleteAllRows();
+
+            TestedProgram program = new TestedProgram();
+            program.start(args);
+
+            String output = program.execute("1");
+
+            Matcher cardNumberMatcher = cardNumberPattern.matcher(output);
+
+            if (!cardNumberMatcher.find()) {
+                return new CheckResult(false, "Your program outputs card number " +
+                    "wrong.\nCard number should look like 400000DDDDDDDDDD. Where D is some digit");
+            }
+
+            String toTransferCardNumber = cardNumberMatcher.group();
+
+            output = program.execute("1");
+
+            cardNumberMatcher = cardNumberPattern.matcher(output);
+            Matcher pinMatcher = pinPattern.matcher(output);
+
+            if (!cardNumberMatcher.find() || !pinMatcher.find()) {
+                return new CheckResult(false, "You should output card number and PIN like in example");
+            }
+
+            String correctPin = pinMatcher.group().trim();
+            String correctCardNumber = cardNumberMatcher.group();
+
+            program.execute("2");
+            program.execute(correctCardNumber + "\n" + correctPin);
+            output = program.execute("3\n" + incorrectCardNumber);
+
+            if (!output.contains("mistake")) {
+                return new CheckResult(false, "You should not allow to transfer " +
+                    "to a card number that doesn't pass the Luhn algorithm.\n You should print " +
+                    "'Probably you made mistake in the card number. Please try again!'");
+            }
+
+            output = program.execute("3\n" + notExistingCardNumber);
+
+            if (!output.contains("exist")) {
+                return new CheckResult(false, "You should not allow to transfer " +
+                    "to a card number that does not exist.\nYou should print " +
+                    "'Such a card does not exist.'");
+            }
+
+            output = program.execute("3\n" + toTransferCardNumber + "\n100000");
+            if (!output.toLowerCase().contains("not enough money")) {
+                return new CheckResult(false, "You should not allow a transfer if " +
+                    "there is not enough money in the account to complete it. You should print " +
+                    "'Not enough money!'");
+            }
+
+            program.execute("2\n20000\n3\n" + toTransferCardNumber + "\n10000");
+
+            stopAndCheckIfUserProgramWasStopped(program);
+
+            int correctBalanceForBothAccounts = 10000;
+            int toTransferCardBalance = getBalance(toTransferCardNumber);
+            int correctCardNumberBalance = getBalance(correctCardNumber);
+
+            if (toTransferCardBalance != correctBalanceForBothAccounts) {
+                return new CheckResult(false, "Incorrect account balance of the card to which the transfer was made.");
+            }
+
+            if (correctCardNumberBalance != correctBalanceForBothAccounts) {
+                return new CheckResult(false, "Incorrect account balance of the card used to make the transfer.");
+            }
+
+            return CheckResult.correct();
+        }
+
+        // ttest is not a typo!
+        @DynamicTest
+        CheckResult ttest12_checkTransfer() {
+
+            deleteAllRows();
+
+            TestedProgram program = new TestedProgram();
+            program.start(args);
+
+            String output = program.execute("1");
+
+            Matcher cardNumberMatcher = cardNumberPattern.matcher(output);
+            Matcher pinMatcher = pinPattern.matcher(output);
+
+            if (!cardNumberMatcher.find() || !pinMatcher.find()) {
+                return new CheckResult(false, "You should output card number and PIN like in example");
+            }
+
+            String correctPin = pinMatcher.group().trim();
+            String correctCardNumber = cardNumberMatcher.group();
+
+            program.execute("2\n" + correctCardNumber + "\n" + correctPin + "\n4");
+
+            stopAndCheckIfUserProgramWasStopped(program);
+
+            try {
+                PreparedStatement statement = getConnection().prepareStatement("SELECT * FROM card where number = ?");
+                statement.setString(1, correctCardNumber);
+                ResultSet resultSet = statement.executeQuery();
+                if (resultSet.next()) {
+                    return new CheckResult(false, "After closing the account, the card should be deleted " +
+                        "from the database.");
+                }
+            } catch (SQLException e) {
+                throw new WrongAnswer("Can't execute a query in your database! Make sure that your database isn't broken and you close your connection at the end of the program!");
+            }
+
+            closeConnection();
+            return CheckResult.correct();
+        }
+
+        private static Connection getConnection() {
+            if (connection == null) {
+                try {
+                    connection = DriverManager.getConnection("jdbc:sqlite:" + databaseFileName);
+                } catch (SQLException exception) {
+                    throw new WrongAnswer("Can't connect to the database! Make sure you close your database" +
+                        " connection at the end of the program!");
+                }
+            }
+            return connection;
+        }
+
+        private static void closeConnection() {
+            if (connection == null)
+                return;
+            try {
+                connection.close();
+            } catch (SQLException ignored) {
+            }
+            connection = null;
+        }
+
+        @BeforeClass
+        public static void createTempDatabase() throws IOException {
+
+            closeConnection();
+
+            Path userDbFile = Paths.get(databaseFileName);
+            Path tempDbFile = Paths.get(tempDatabaseFileName);
+
+            if (!userDbFile.toFile().exists())
+                return;
+
+            try {
+                Files.deleteIfExists(tempDbFile);
+                Files.copy(userDbFile, tempDbFile);
+            } catch (Exception ignored) {
+            }
+        }
+
+        @AfterClass
+        public static void deleteTempDatabase() throws IOException {
+
+            closeConnection();
+
+            Path userDbFile = Paths.get(databaseFileName);
+            Path tempDbFile = Paths.get(tempDatabaseFileName);
+
+            if (!tempDbFile.toFile().exists())
+                return;
+
+            try {
+                Files.deleteIfExists(userDbFile);
+                Files.move(tempDbFile, userDbFile);
+            } catch (Exception ignored) {
+            }
+        }
+
+        private boolean getData(String out) {
+
+            Pattern cardNumberPattern = Pattern.compile("400000\\d{10}");
+            Matcher cardNumberMatcher = cardNumberPattern.matcher(out);
+
+            Pattern pinPattern = Pattern.compile("^\\d{4}$", Pattern.MULTILINE);
+            Matcher pinMatcher = pinPattern.matcher(out);
+
+            if (!cardNumberMatcher.find() || !pinMatcher.find()) {
+                return false;
+            }
+
+            String number = cardNumberMatcher.group();
+            String PIN = pinMatcher.group();
+
+            if (!checkLuhnAlgorithm(number)) {
+                return false;
+            }
+
+            correctData.put(number, PIN);
+
+            return true;
+        }
+
+        private boolean checkLuhnAlgorithm(String cardNumber) {
+            int result = 0;
+            for (int i = 0; i < cardNumber.length(); i++) {
+                int digit = Character.getNumericValue(cardNumber.charAt(i));
+                if (i % 2 == 0) {
+                    int doubleDigit = digit * 2 > 9 ? digit * 2 - 9 : digit * 2;
+                    result += doubleDigit;
+                    continue;
+                }
+                result += digit;
+            }
+            return result % 10 == 0;
+        }
+
+        private void deleteAllRows() {
+            try {
+                getConnection().createStatement().execute("DELETE FROM card");
+                closeConnection();
+            } catch (SQLException exception) {
+                throw new WrongAnswer("Can't execute a query in your database! Make sure that your database isn't broken and you close your connection at the end of the program!");
+            }
+        }
+
+        private void stopAndCheckIfUserProgramWasStopped(TestedProgram program) {
+            program.execute("0");
+            if (!program.isFinished()) {
+                throw new WrongAnswer("After choosing 'Exit' item you should stop your program" +
+                    " and close database connection!");
+            }
+        }
+
+        private static int getBalance(String cardNumber) {
+            try {
+                PreparedStatement preparedStatement = getConnection().prepareStatement("SELECT * FROM card WHERE number = ?");
+                preparedStatement.setString(1, cardNumber);
+                ResultSet resultSet = preparedStatement.executeQuery();
+                resultSet.next();
+                int result = resultSet.getInt("balance");
+                closeConnection();
+                return result;
+            } catch (SQLException e) {
+                throw new WrongAnswer("Can't execute a query in your database! Make sure that your database isn't broken and you close your connection at the end of the program!");
+            }
+        }
+    }
+  learner_created: false
+- name: src/banking/DataAccess.java
+  visible: true
+  text: "package banking;\n\nimport java.sql.*;\n\npublic final class DataAccess {\n\
+    \n    private static DataAccess driver;\n    private final Connection connection;\n\
+    \n    public static DataAccess getDataAccessObject(String url) throws SQLException\
+    \ {\n        if (driver == null) driver = new DataAccess(url);\n        return\
+    \ driver;\n    }\n\n    private Connection getNewConnection(String url) throws\
+    \ SQLException {\n        return DriverManager.getConnection(url);\n    }\n\n\
+    \    private DataAccess(String url) throws SQLException {\n        connection\
+    \ = getNewConnection(url);\n    }\n\n    public void createTable(String tableName)\
+    \ {\n//        String dropSql = \"DROP TABLE IF EXISTS \" + tableName + \";\\\
+    n\";\n        String sql = \"CREATE TABLE IF NOT EXISTS \" + tableName + \" (\\\
+    n\"\n                + \"\tid INTEGER,\\n\"\n                + \"\tnumber TEXT,\\\
+    n\"\n                + \"\tpin TEXT,\\n\"\n                + \" balance INTEGER\
+    \ DEFAULT 0\\n\"\n                + \");\";\n\n        try(Statement stmt = driver.connection.createStatement();)\
+    \ {\n            stmt.execute(sql);\n        }\n        catch (SQLException e)\
+    \ {\n            System.out.println(e.getMessage());\n        }\n    }\n\n   \
+    \ public void addCardToDB(String tableName, int oldId, String number,\n      \
+    \                      String pin, int balance) {\n        String sql = \"INSERT\
+    \ INTO \" + tableName\n                + \"(id, number, pin, balance)\\n\"\n \
+    \               + \"VALUES(?, ?, ?, ?);\";\n\n        try(PreparedStatement pstmt\
+    \ = driver.connection.prepareStatement(sql);) {\n            pstmt.setInt(1, oldId\
+    \ + 1);\n            pstmt.setString(2, number);\n            pstmt.setString(3,\
+    \ pin);\n            pstmt.setInt(4, balance);\n            pstmt.executeUpdate();\n\
+    \        }\n        catch (SQLException e) {\n            System.out.println(e.getMessage());\n\
+    \        }\n    }\n\n    public Account getAccountByCardNum(String tableName,\
+    \ String cardNum) {\n        String sql = \"SELECT * FROM \" + tableName + \"\
+    \ WHERE number = \" + cardNum;\n\n        try(\n                PreparedStatement\
+    \ pstmt = driver.connection.prepareStatement(sql);\n                ResultSet\
+    \ rs = pstmt.executeQuery();\n        ) {\n            if (rs.next()) {\n    \
+    \            return new Account(rs.getString(2), rs.getString(3), rs.getInt(4));\n\
+    \            }\n            else {\n                return null;\n           \
+    \ }\n        }\n        catch (SQLException e) {\n            System.out.println(e.getMessage());\n\
+    \            return null;\n        }\n    }\n}"
+  learner_created: true
+- name: src/banking/Account.java
+  visible: true
+  text: |
+    package banking;
+
+    import java.util.Random;
+
+    public class Account {
+        private String cardNumber;
+        private String pinCode;
+        private int balance;
+
+        private static String iin;
+        private static int customerAccNumLen;
+
+        private long lastSeed;
+
+        static {
+            iin = "400000";
+            customerAccNumLen = 9;
+        }
+
+        public Account(long lastSeed) {
+            balance = 0;
+            this.lastSeed = lastSeed;
+            this.cardNumber = generateCardNumber();
+            this.pinCode = generateSequence(cardNumber.charAt(13), 4);
+            this.lastSeed++;
+        }
+
+        public Account(String cardNumber, String pinCode, int balance) {
+            this.cardNumber = cardNumber;
+            this.pinCode = pinCode;
+            this.balance = balance;
+            this.lastSeed = -1;
+        }
+
+        public String getCardNumber() {
+            return cardNumber;
+        }
+
+        public String getPinCode() {
+            return pinCode;
+        }
+
+        public long getLastSeed() {
+            return lastSeed;
+        }
+
+        public int getBalance() {
+            return balance;
+        }
+
+        private String generateCardNumber() {
+            String customerAccNum = generateSequence(lastSeed + 1, customerAccNumLen);
+            int checksum = generateLuhnCheckSum(iin + customerAccNum);
+            return iin + customerAccNum + checksum;
+        }
+
+        private int generateLuhnCheckSum(String number) {
+            int counter = number.length();
+            long num = Long.parseLong(number);
+            int sum = 0;
+            long lastDigit = 0;
+
+            while (num > 0) {
+                lastDigit = num % 10;
+                if (counter % 2 != 0) {
+                    lastDigit *= 2;
+                    lastDigit -= lastDigit > 9 ? 9 : 0;
+                }
+                --counter;
+                num /= 10;
+                sum += lastDigit;
+            }
+
+            if (sum % 10 == 0) {
+                return 0;
+            }
+            return 10 - (sum % 10);
+        }
+
+        private String generateSequence(long seed, int amount) {
+            Random rnd = new Random(seed);
+            StringBuilder sequence = new StringBuilder();
+            for (int i = 0; i < amount; ++i) {
+                sequence.append(rnd.nextInt(10));
+            }
+            return sequence.toString();
+        }
+    }
+  learner_created: true
+- name: src/banking/Menu.java
+  visible: true
+  text: |
+    package banking;
+
+    public class Menu {
+        private static String str1;
+        private static String str2;
+        private static String str0;
+
+        private static String loggedStr1;
+        private static String loggedStr2;
+
+        static {
+            str1 = "1. Create an account\n";
+            str2 = "2. Log into account\n";
+            str0 = "0. Exit\n";
+
+            loggedStr1 = "1. Balance\n";
+            loggedStr2 = "2. Log out\n";
+        }
+
+        public static void printMenu() {
+            System.out.print(str1 + str2 + str0);
+        }
+
+        public static void printAnswerOnCreateAcc(String cardNumber, String pinCode) {
+            String res = "Your card has been created\n" + "Your card number:\n" +
+                    cardNumber + "\nYour card PIN:\n" + pinCode + "\n";
+            System.out.println(res);
+        }
+
+        public static void printAnswerOnLogInto() {
+            System.out.println("Enter your card number:");
+        }
+
+        public static void printEnterPin() {
+            System.out.println("Enter your PIN:");
+        }
+
+        public static void printWrongPin() {
+            System.out.println("\nWrong card number or PIN!\n");
+        }
+
+        public static void printSuccessLogin() {
+            System.out.println("\nYou have successfully logged in!\n");
+        }
+
+        public static void printMenuLogged() {
+            System.out.println(loggedStr1 + loggedStr2 + str0);
+        }
+
+        public static void printBalance(int balance) {
+            System.out.println("\nBalance: " + balance + "\n");
+        }
+
+        public static void printLogOut() {
+            System.out.println("\nYou have successfully logged out!\n");
+        }
+
+        public static void printWrongOption() {
+            System.out.println("Wrong option!\n");
+        }
+
+        public static void printSayBye() {
+            System.out.println("\nBye!");
+        }
+    }
+  learner_created: true
+- name: src/banking/Service.java
+  visible: true
+  learner_created: true
+- name: src/banking/Utils.java
+  visible: true
+  learner_created: true
+feedback_link: https://hyperskill.org/projects/93/stages/518/implement
+status: Solved
+feedback:
+  message: Congratulations!
+  time: Mon, 22 Feb 2021 18:34:45 UTC
+record: -1
